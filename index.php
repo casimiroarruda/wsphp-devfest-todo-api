@@ -14,5 +14,22 @@ $tasks = [
     ['id' => 1, 'title' => 'Conferir o setup', 'status' => 'Concluída', 'starred' => true],
     ['id' => 2, 'title' => 'Resolver o CORS', 'status' => 'Pendente', 'starred' => false]
 ];
+// Roteador simples
+switch ($_SERVER['REQUEST_METHOD']) {
+    case 'GET':
+        echo json_encode($tasks);
+        break;
 
-echo json_encode($tasks);
+    case 'POST':
+        $input = json_decode(file_get_contents('php://input'), true);
+        echo json_encode([
+            'message' => 'Tarefa recebida com sucesso!',
+            'data' => $input
+        ]);
+        break;
+
+    default:
+        http_response_code(405); // Method Not Allowed
+        echo json_encode(['error' => 'Método não permitido']);
+        break;
+}
