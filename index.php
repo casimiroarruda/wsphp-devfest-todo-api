@@ -9,23 +9,48 @@ if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
     exit;
 }
 header('Content-Type: application/json');
-# Nossas tarefas iniciais
-$tasks = [
-    ['id' => 1, 'title' => 'Conferir o setup', 'status' => 'Concluída', 'starred' => true],
-    ['id' => 2, 'title' => 'Resolver o CORS', 'status' => 'Pendente', 'starred' => false]
-];
+
+# Acima, cabeçalhos
+$pdo = new PDO("sqlite:todo.db");
+$pdo->exec(<<<SQL
+CREATE TABLE IF NOT EXISTS tasks (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    status TEXT DEFAULT 'Pendente',
+    description TEXT,
+    dueDate TEXT,
+    starred BOOLEAN DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+)
+SQL);
+# Abaixo, roteador
+
 // Roteador simples
 switch ($_SERVER['REQUEST_METHOD']) {
     case 'GET':
+        $stmt = $pdo->query("SELECT * FROM tasks ORDER BY created_at DESC");
+        $tasks = $stmt->fetchAll(PDO::FETCH_ASSOC);
         echo json_encode($tasks);
         break;
 
     case 'POST':
         $input = json_decode(file_get_contents('php://input'), true);
-        echo json_encode([
-            'message' => 'Tarefa recebida com sucesso!',
-            'data' => $input
-        ]);
+        $title = $input['title'] ?? '';
+        if (empty($title)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'O título é obrigatório']);
+            exit;
+        }
+        $stmt = $pdo->prepare(
+            "INSERT INTO tasks (title) VALUES (:title)"
+        );
+        $stmt->execute([$title]);
+        $newId = $pdo->lastInsertId();
+        $taskStmt = $pdo->prepare("SELECT * FROM tasks WHERE id = :id");
+        $taskStmt->execute(["id" => $newId]);
+        $newTask = $taskStmt->fetch(PDO::FETCH_ASSOC);
+        http_response_code(201);
+        echo json_encode($newTask);
         break;
 
     default:
