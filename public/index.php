@@ -1,6 +1,9 @@
 <?php
+require __DIR__ . "/../vendor/autoload.php";
+$dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . DIRECTORY_SEPARATOR . "..");
+$dotenv->safeLoad();
 # CORS
-header('Access-Control-Allow-Origin: http://localhost:3000');
+header("Access-Control-Allow-Origin: " . $_ENV["CLIENT_URL"]);
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Accept');
 # tratamento para o request OPTIONS do Navegador
@@ -11,7 +14,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
 header('Content-Type: application/json');
 
 # Acima, cabeçalhos
-$pdo = new PDO("sqlite:todo.db");
+$pdo = new PDO($_ENV["DB_DSN"]);
 $pdo->exec(<<<SQL
 CREATE TABLE IF NOT EXISTS tasks (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
